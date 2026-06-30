@@ -24,11 +24,12 @@ namespace dsp {
 
     template<Arithmetic T, std::size_t Deg>
     class Polynomial {
+
     public:
         static constexpr std::size_t Degree = Deg;
-
         // Fields
         std::array<T, Degree + 1> coeffs_ {};
+
         constexpr Polynomial() = default;
         constexpr Polynomial(const std::array<T, Degree + 1>& initial_coeffs): coeffs_(std::move(initial_coeffs)){}
 
@@ -65,11 +66,11 @@ namespace dsp {
 
 
         // Unary Negation (-P)
-        constexpr auto operator-(this auto&& self)->std::decay<Polynomial&&> {
+        constexpr auto operator-(this auto&& self){
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = -self.coeffs[i];
+                result.coeffs_[i] = -self.coeffs_[i];
             }
             return result;
         }
@@ -77,11 +78,11 @@ namespace dsp {
         // Scalar Multiplication (P * scalar)
         template <typename Scalar>
             requires std::convertible_to<Scalar, T>
-        constexpr auto operator*(this auto&& self, Scalar val)->std::decay<Polynomial&&> {
+        constexpr auto operator*(this auto&& self, Scalar val) {
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = self.coeffs[i] * static_cast<T>(val);
+                result.coeffs_[i] = self.coeffs_[i] * static_cast<T>(val);
             }
             return result;
         }
@@ -89,12 +90,12 @@ namespace dsp {
         // Scalar Division (P / scalar)
         template <typename Scalar>
             requires std::convertible_to<Scalar, T>
-        constexpr auto operator/(this auto&& self, Scalar val)->std::decay<Polynomial&&> {
+        constexpr auto operator/(this auto&& self, Scalar val) {
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             T inv = T{1.0} / static_cast<T>(val);
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = self.coeffs[i] * inv;
+                result.coeffs_[i] = self.coeffs_[i] * inv;
             }
             return result;
         }
