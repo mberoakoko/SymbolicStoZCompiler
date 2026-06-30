@@ -24,11 +24,12 @@ namespace dsp {
 
     template<Arithmetic T, std::size_t Deg>
     class Polynomial {
+
     public:
         static constexpr std::size_t Degree = Deg;
-
         // Fields
         std::array<T, Degree + 1> coeffs_ {};
+
         constexpr Polynomial() = default;
         constexpr Polynomial(const std::array<T, Degree + 1>& initial_coeffs): coeffs_(std::move(initial_coeffs)){}
 
@@ -65,11 +66,11 @@ namespace dsp {
 
 
         // Unary Negation (-P)
-        constexpr auto operator-(this auto&& self)->std::decay<Polynomial&&> {
+        constexpr auto operator-(this auto&& self){
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = -self.coeffs[i];
+                result.coeffs_[i] = -self.coeffs_[i];
             }
             return result;
         }
@@ -77,11 +78,11 @@ namespace dsp {
         // Scalar Multiplication (P * scalar)
         template <typename Scalar>
             requires std::convertible_to<Scalar, T>
-        constexpr auto operator*(this auto&& self, Scalar val)->std::decay<Polynomial&&> {
+        constexpr auto operator*(this auto&& self, Scalar val) {
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = self.coeffs[i] * static_cast<T>(val);
+                result.coeffs_[i] = self.coeffs_[i] * static_cast<T>(val);
             }
             return result;
         }
@@ -89,12 +90,12 @@ namespace dsp {
         // Scalar Division (P / scalar)
         template <typename Scalar>
             requires std::convertible_to<Scalar, T>
-        constexpr auto operator/(this auto&& self, Scalar val)->std::decay<Polynomial&&> {
+        constexpr auto operator/(this auto&& self, Scalar val) {
             using Decayed = std::decay_t<decltype(self)>;
             Decayed result;
             T inv = T{1.0} / static_cast<T>(val);
             for (std::size_t i = 0; i <= Deg; ++i) {
-                result.coeffs[i] = self.coeffs[i] * inv;
+                result.coeffs_[i] = self.coeffs_[i] * inv;
             }
             return result;
         }
@@ -124,6 +125,68 @@ namespace dsp {
             std::cout << "\n";
         }
     };
+
+
+    // Scalar * Polynomial
+    template <Arithmetic T, std::size_t Deg, typename Scalar>
+        requires std::convertible_to<Scalar, T>
+    constexpr auto operator*(Scalar val, const Polynomial<T, Deg>& poly) {
+        return poly * val;
+    }
+
+    // Polynomial Addition (P1 + P2)
+    template <Arithmetic T, std::size_t Deg1, std::size_t Deg2>
+    constexpr auto operator+(const Polynomial<T, Deg1>& lhs, const Polynomial<T, Deg2>& rhs) {
+        constexpr std::size_t OutDeg = std::max(Deg1, Deg2);
+        Polynomial<T, OutDeg> result{};
+
+        for (std::size_t i = 0; i <= OutDeg; ++i) {
+            T val1 = (i <= Deg1) ? lhs.coeffs_[i] : T{0};
+            T val2 = (i <= Deg2) ? rhs.coeffs_[i] : T{0};
+            result.coeffs_[i] = val1 + val2;
+        }
+        return result;
+    }
+
+
+    // Polynomial Subtraction (P1 - P2)
+    template <Arithmetic T, std::size_t Deg1, std::size_t Deg2>
+    constexpr auto operator-(const Polynomial<T, Deg1>& lhs, const Polynomial<T, Deg2>& rhs) {
+        constexpr std::size_t OutDeg = std::max(Deg1, Deg2);
+        Polynomial<T, OutDeg> result{};
+
+        for (std::size_t i = 0; i <= OutDeg; ++i) {
+            T val1 = (i <= Deg1) ? lhs.coeffs_[i] : T{0};
+            T val2 = (i <= Deg2) ? rhs.coeffs_[i] : T{0};
+            result.coeffs_[i] = val1 - val2;
+        }
+        return result;
+    }
+
+
+    /**
+     * Polynomial Multiplication (P1 * P2 using algebraic convolution)
+     * @tparam T Param Type
+     * @tparam Deg1 degree of poly 1
+     * @tparam Deg2 degree of poly 2
+     * @param lhs poly_1
+     * @param rhs poly_2
+     * @return multiplicand of polynomial
+     */
+    template <Arithmetic T, std::size_t Deg1, std::size_t Deg2>
+    constexpr auto operator*(const Polynomial<T, Deg1>& lhs, const Polynomial<T, Deg2>& rhs) {
+        constexpr std::size_t OutDeg = Deg1 + Deg2;
+        Polynomial<T, OutDeg> result{};
+
+        for (std::size_t i = 0; i <= Deg1; ++i) {
+            for (std::size_t j = 0; j <= Deg2; ++j) {
+                result.coeffs[i + j] += lhs.coeffs_[i] * rhs.coeffs_[j];
+            }
+        }
+        return result;
+    }
+
+
 }
 
 #endif //SYMBOLICSTOZCOMPILER_POLY_HPP
