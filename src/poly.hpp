@@ -108,7 +108,7 @@ namespace dsp {
                 if (!first && coeffs_[i] > T{0}) std::cout << " + ";
                 else if (coeffs_[i] < T{0}) std::cout << " - ";
 
-                T abs_val = coeffs[_i] < T{0} ? -coeffs_[i] : coeffs_[i];
+                T abs_val = coeffs_[i] < T{0} ? -coeffs_[i] : coeffs_[i];
 
                 if (abs_val != T{1} || i == 0) {
                     std::cout << abs_val;
