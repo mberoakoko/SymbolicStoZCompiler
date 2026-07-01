@@ -68,6 +68,84 @@ namespace dsp {
         }
     }
 
+
+
+    /**
+    * @brief Represents the independent variable 's' in the continuous domain.
+    */
+    template <typename T>
+    struct VariableNode : public Expression<VariableNode<T>> {
+        using value_type = T;
+
+        constexpr VariableNode() = default;
+
+        // Evaluation: VariableNode 's' simply evaluates to the input value x
+        template <typename U>
+        constexpr auto evaluate(const U& x) const {
+            return x;
+        }
+    };
+
+    /**
+    * @brief Represents a scalar literal constant within the expression tree.
+    */
+    template <typename T>
+    struct ConstantNode : public Expression<ConstantNode<T>> {
+        using value_type = T;
+        T value;
+
+        constexpr explicit ConstantNode(T val) : value(val) {}
+
+        // Evaluation: ConstantNode always evaluates to its stored constant value
+        template <typename U>
+        constexpr auto evaluate(const U&) const {
+            return value;
+        }
+    };
+
+    /**
+     * @brief Represents symbolic negation: -Expr
+     */
+    template <typename Expr>
+    struct UnaryMinusNode : public Expression<UnaryMinusNode<Expr>> {
+        Expr expr;
+
+        constexpr explicit UnaryMinusNode(Expr e) : expr(std::move(e)) {}
+
+        template <typename U>
+        constexpr auto evaluate(const U& x) const {
+            return -expr.evaluate(x);
+        }
+    };
+
+
+    /**
+    * @brief Generic Binary Operator Node supporting addition, subtraction, multiplication, and division.
+    */
+    template <typename Op, typename Left, typename Right>
+    struct BinaryNode : public Expression<BinaryNode<Op, Left, Right>> {
+        Left lhs;
+        Right rhs;
+
+        constexpr BinaryNode(Left l, Right r) : lhs(std::move(l)), rhs(std::move(r)) {}
+
+        template <typename U>
+        constexpr auto evaluate(const U& x) const {
+            auto left_val = lhs.evaluate(x);
+            auto right_val = rhs.evaluate(x);
+
+            if constexpr (std::is_same_v<Op, AddOp>) {
+                return left_val + right_val;
+            } else if constexpr (std::is_same_v<Op, SubOp>) {
+                return left_val - right_val;
+            } else if constexpr (std::is_same_v<Op, MulOp>) {
+                return left_val * right_val;
+            } else if constexpr (std::is_same_v<Op, DivOp>) {
+                return left_val / right_val;
+            }
+        }
+    };
+
 }
 
 #endif //SYMBOLICSTOZCOMPILER_EXPRESSION_ENGINE_HPP
