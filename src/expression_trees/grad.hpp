@@ -6,35 +6,49 @@
 #define SYMBOLICSTOZCOMPILER_GRAD_HPP
 
 #include <ostream>
+#include <utility>
 #include <bits/stdc++.h>
 
 namespace grad {
-    struct Value;
+    class Value;
     using ValueSharedPtr = std::shared_ptr<Value>;
 
-    struct  Value: std::enable_shared_from_this<Value> {
-
+    // Forward declaration of the node implementation
+    struct ValueImpl : public std::enable_shared_from_this<ValueImpl> {
         double data;
-        double grad = 0;
-        std::vector<Value> _prev_val;
+        double grad = 0.0;
+
+        // Graph edges MUST hold shared pointers to prevent copying and share ownership
+        std::vector<std::shared_ptr<ValueImpl>> _prev_val;
         std::string _op;
         std::string label;
         std::function<void()> _backward = []{};
 
-        Value(double data, std::vector<Value> children = {}, const std::string& op = "", const std::string& label = "")
-            : data(data), _prev_val(std::move(children)), _op(op), label(label){
+        ValueImpl(double data, std::vector<std::shared_ptr<ValueImpl>> children = {}, std::string  op = "", std::string  label = "")
+            : data(data), _prev_val(std::move(children)), _op(std::move(op)), label(std::move(label)) {}
 
-        }
+        // A sample addition operation showing how to use shared_from_this() safely
+        static auto add(const std::shared_ptr<ValueImpl>& lhs, const std::shared_ptr<ValueImpl>& rhs) -> std::shared_ptr<ValueImpl> {
+            auto out = std::make_shared<ValueImpl>(lhs->data + rhs->data, std::vector{lhs, rhs}, "+");
 
-        friend std::ostream & operator<<(std::ostream &os, const Value &obj) {
-            return os
-                    << "Value ("
-                   << "data: " << obj.data
-                   << " grad: " << obj.grad
-                   << " _op: " << obj._op
-                   << " label: " << obj.label
-                    << " )";
+            // Use weak pointers inside lambda to avoid reference cycles (Memory Leaks!)
+            std::weak_ptr weak_out = out;
+            out->_backward = [lhs, rhs, weak_out] {
+                if (auto strong_out = weak_out.lock()) {
+                    lhs->grad += strong_out->grad;
+                    rhs->grad += strong_out->grad;
+                }
+            };
+            return out;
         }
+    };
+
+    // Optional: A clean wrapper class so the user doesn't have to type std::shared_ptr everywhere
+    class Value {
+        std::shared_ptr<ValueImpl> impl;
+    public:
+        Value(double val) : impl(std::make_shared<ValueImpl>(val)) {}
+        // Implement operator+, operator*, backward(), etc. here by forwarding to 'impl'
     };
 
 
