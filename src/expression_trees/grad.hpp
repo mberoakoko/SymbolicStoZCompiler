@@ -41,6 +41,40 @@ namespace grad {
             };
             return out;
         }
+
+
+        static auto subtract(const std::shared_ptr<ValueImpl>& lhs, const std::shared_ptr<ValueImpl>& rhs) -> std::shared_ptr<ValueImpl> {
+            auto out = std::make_shared<ValueImpl>(lhs->data - rhs->data, std::vector{lhs, rhs}, "-");
+
+            std::weak_ptr weak_out = out;
+            out->_backward = [lhs, rhs, weak_out] {
+                if (auto strong_out = weak_out.lock()) {
+                    lhs->grad -= strong_out->grad;
+                    rhs->grad -= strong_out->grad;
+                }
+            };
+
+            return out;
+        }
+
+        static auto multiply(const std::shared_ptr<ValueImpl>& lhs, const std::shared_ptr<ValueImpl>& rhs) -> std::shared_ptr<ValueImpl> {
+            auto out = std::make_shared<ValueImpl>(lhs->data * rhs->data, std::vector{lhs, rhs}, "*" );
+
+            std::weak_ptr weak_out = out;
+            out->_backward = [lhs, rhs, weak_out] {
+                if (auto strong_out = weak_out.lock()) {
+                    lhs->grad += strong_out->grad;
+                    rhs->grad += strong_out->grad;
+                }
+
+            };
+
+            return out;
+        }
+
+        static auto divide(const std::shared_ptr<ValueImpl>& lhs, const std::shared_ptr<ValueImpl>& rhs)-> std::shared_ptr<ValueImpl> {
+            // auto out = std::make_shared<ValueImpl>(lhs->data / )
+        }
     };
 
     // Optional: A clean wrapper class so the user doesn't have to type std::shared_ptr everywhere
